@@ -1,5 +1,7 @@
 ## Dataset
-data/
+data/*
+!data/download_adult.py
+!data/preprocessing.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
