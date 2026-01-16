@@ -34,7 +34,10 @@ Mes contributions personnelles sont les suivantes :
    python3 data/download_adult.py
    ```
 
-4. Chaque notebook poeut ensuite être utilisé pour reproduire les résultats !
+4. Chaque notebook peut ensuite être utilisé pour reproduire les résultats. Dans l'ordre:
+   1. `model_coparison.ipynb`: Notebook principal comparant la performance des trois modèles sur des critères d'accuracy et de fairness.
+   2. `generalization_test.ipynb`: Même comparaison entre les différents modèles, mais cette fois en entraînement les seuils optimaux sur un jeu de validation séparé. L'objectif est de tester à quel point la méthode proposée par les auteurs est généralisable à de nouvelles données.
+   3. `graphics.ipynb`: Analyse graphique permettant de visualiser les individus avantagés ou désavantagés par les nouvelles règles de décision. Permet notamment de vérifier si la contrainte 'Do No Harm' est respectée par un classifieur.
 
 ## Référence
 
