@@ -35,6 +35,8 @@ class MulticlassThresholdOptimizer:
         self.y_pred = None     # prédictions globales
         self.proportions = {}  # q_z
 
+        self.fitted = False
+
 
     def _fit_base_model(self, X_train, y_train, X_test):
         """Entraîne une régression logistique non-contrainte et calcule les prédictions qui servent de base à l'algorithme de flip."""
@@ -67,6 +69,22 @@ class MulticlassThresholdOptimizer:
             raise ValueError("Unknown flip type")
 
         return 1 / (self.categories_count[z] * delta_acc)
+    
+    def _compute_group_thresholds(self):
+        """Calcule le seuil personalisé de chaque groupe APRES l'aglorithme d'ajustement."""
+        self.thresholds = {}
+        for z in self.categories:
+            # indices du groupe
+            idx = self.group_indices[z]
+            # probabilités des individus prédits positifs après flips
+            pos_probs = self.probas[idx][self.y_pred[idx] == 1]
+            if len(pos_probs) > 0:
+                # le seuil est le plus petit p_i qui a été assigné à 1
+                self.thresholds[z] = pos_probs.min()
+            else:
+                # aucun positif dans ce groupe : on met un seuil très haut
+                self.thresholds[z] = 1.1
+
 
 
     def _adjust_thresholds(self, gamma, max_iter=10000):
@@ -132,8 +150,27 @@ class MulticlassThresholdOptimizer:
 
     def fit_transform(self, X_train, y_train, X_test, gamma):
         """Fonction principale poue entraîner le modèle et retourner la prédiction modifiée par les flips.
-            -> ATTENTION: C'est la seule fonction qui doit être appelée par l'utilisateur."""
+            -> ATTENTION: C'est la seule fonction qui doit être appelée par l'utilisateur (avec predict)"""
         
         self._fit_base_model(X_train, y_train, X_test)
         self._adjust_thresholds(gamma)
+
+        self._compute_group_thresholds() # On caclule les nouveaux seuils qui ont été déterminé sur notre jeu de test.
+        self.fitted = True # On cosidère le modèle fitté
+
         return self.y_pred
+    
+    def predict(self, X_new, protected_new):
+        """Fonction pour prédire sur de NOUVELLES données """
+
+        if self.fitted == False:
+            raise Exception('The model is not fitted')
+
+        probas_new = self.model.predict_proba(X_new)[:, 1]
+        y_pred_new = np.zeros_like(probas_new, dtype=int)
+        
+        for z in self.categories:
+            idx = np.where(protected_new == z)[0]
+            y_pred_new[idx] = (probas_new[idx] >= self.thresholds[z]).astype(int)
+        
+        return y_pred_new
